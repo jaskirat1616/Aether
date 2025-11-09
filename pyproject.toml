@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "aether"
+version = "0.1.0"
+description = "Aether Wi-Fi-based distance and spatial awareness SDK"
+authors = ["Aether Team <team@aether.dev>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [
+    { include = "aether", from = "sdk/src" },
+]
+
+[tool.poetry.scripts]
+aether = "aether.cli:app"
+aether-calibrate = "aether.tools.calibrate:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.26"
+scipy = "^1.12"
+scikit-learn = "^1.4"
+networkx = "^3.2"
+pandas = "^2.2"
+pyarrow = "^15.0"
+duckdb = "^0.10"
+plotly = "^5.22"
+matplotlib = "^3.8"
+fastapi = "^0.111"
+uvicorn = "^0.30"
+pydantic = "^2.7"
+rich = "^13.7"
+typer = "^0.12"
+websockets = "^12.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2"
+pytest-asyncio = "^0.23"
+mypy = "^1.10"
+black = "^24.4"
+ruff = "^0.4"
+pre-commit = "^3.7"
+
+[build-system]
+requires = ["poetry-core>=1.8"]
+build-backend = "poetry.core.masonry.api"
+
