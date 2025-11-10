@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from aether.api import Aether
 
 app = FastAPI(title="Aether API")
+
+# Enable CORS for Next.js frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class RangeRequest(BaseModel):
@@ -31,17 +42,37 @@ def range_endpoint(payload: RangeRequest) -> RangeResponse:
 
 
 @app.websocket("/ws/scan")
-async def websocket_scan(ws: WebSocket, interface: str) -> None:
+async def websocket_scan(ws: WebSocket) -> None:
     await ws.accept()
     client: Optional[Aether] = None
     try:
-        client = Aether(interface=interface)
-        for record in client.scan():
-            await ws.send_json({"ip": record.ip, "distance": record.distance})
+        # Receive initial configuration
+        config = await ws.receive_json()
+        interface = config.get("interface", "simulate")
+        csi_backend = config.get("csi_backend")
+        
+        client = Aether(interface=interface, csi_backend=csi_backend)
+        
+        # Continuously scan and send updates
+        import asyncio
+        while True:
+            for record in client.scan():
+                await ws.send_json({
+                    "ip": record.ip,
+                    "distance": record.distance,
+                    "method": record.metadata.get("method", "unknown"),
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+            await asyncio.sleep(2)  # Scan interval
     except WebSocketDisconnect:
         pass
+    except Exception as e:
+        await ws.send_json({"error": str(e)})
     finally:
         if client:
             client.close()
-        await ws.close()
+        try:
+            await ws.close()
+        except Exception:
+            pass
 

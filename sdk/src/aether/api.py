@@ -25,8 +25,9 @@ class Aether:
         self,
         interface: str,
         collector_config: Optional[CollectorConfig] = None,
+        csi_backend: Optional[str] = None,
     ) -> None:
-        self._iface = WiFiInterface.open(interface)
+        self._iface = WiFiInterface.open(interface, csi_backend=csi_backend)
         self._collector = SignalCollector(self._iface, collector_config)
 
     def range(self, target: str, method: str = "auto") -> RangeEstimate:
@@ -36,10 +37,12 @@ class Aether:
     def scan(self) -> Iterable[DeviceRecord]:
         """Discover reachable devices and provide coarse range estimates."""
         for record in self._collector.enumerate_devices():
+            metadata = dict(record.metadata)
+            metadata["method"] = record.estimate.method
             yield DeviceRecord(
                 ip=record.ip,
                 distance=record.estimate.distance,
-                metadata=record.metadata,
+                metadata=metadata,
             )
 
     def close(self) -> None:
@@ -54,8 +57,9 @@ class AetherSession(AbstractContextManager["AetherSession"]):
         self,
         interface: str,
         collector_config: Optional[CollectorConfig] = None,
+        csi_backend: Optional[str] = None,
     ) -> None:
-        self._aether = Aether(interface=interface, collector_config=collector_config)
+        self._aether = Aether(interface=interface, collector_config=collector_config, csi_backend=csi_backend)
 
     def __enter__(self) -> "AetherSession":
         return self

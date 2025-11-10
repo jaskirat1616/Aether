@@ -54,12 +54,39 @@ class WiFiInterface(abc.ABC):
         """Release resources."""
 
     @staticmethod
-    def open(name: str) -> "WiFiInterface":
+    def open(name: str, csi_backend: str | None = None) -> "WiFiInterface":
         """Factory selecting correct backend implementation."""
+        import platform
+
         from .linux import LinuxWiFiInterface
+        from .macos import MacOSWiFiInterface
         from .simulated import SimulatedWiFiInterface
+        from .windows import WindowsWiFiInterface
 
         if name == "simulate":
             return SimulatedWiFiInterface(name)
-        return LinuxWiFiInterface(name)
+
+        system = platform.system()
+        if system == "Linux":
+            interface = LinuxWiFiInterface(name)
+        elif system == "Darwin":
+            interface = MacOSWiFiInterface(name)
+        elif system == "Windows":
+            interface = WindowsWiFiInterface(name)
+        else:
+            raise InterfaceError(f"Unsupported platform: {system}")
+
+        # Add CSI capture if backend specified
+        if csi_backend:
+            from .csi import CSICapableWiFiInterface, NexmonCSIBackend, Intel5300CSIBackend
+
+            if csi_backend == "nexmon":
+                csi = NexmonCSIBackend(name)
+            elif csi_backend == "intel5300":
+                csi = Intel5300CSIBackend(name)
+            else:
+                raise InterfaceError(f"Unknown CSI backend: {csi_backend}")
+            return CSICapableWiFiInterface(interface, csi)
+
+        return interface
 
