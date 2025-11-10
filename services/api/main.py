@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Add SDK to path if running from services/api directory
+sdk_path = Path(__file__).parent.parent.parent / "sdk" / "src"
+if str(sdk_path) not in sys.path:
+    sys.path.insert(0, str(sdk_path))
 
 from aether.api import Aether
 

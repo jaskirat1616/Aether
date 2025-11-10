@@ -52,10 +52,18 @@ class SimulatedWiFiInterface(WiFiInterface):
     def capture_csi(self, target: str) -> Iterable[list[complex]]:
         distance = self._distance(target)
         subcarriers = 30
-        phase_offset = distance * 0.5
+        # Phase offset proportional to distance (wavelength ~ 0.125m at 2.4GHz)
+        phase_offset = (distance / 0.125) * 2 * math.pi
+        # Magnitude decreases with distance (inverse square law approximation)
+        magnitude = 1.0 / max(distance, 0.1)
+        noise_scale = 0.1
+        
         for _ in range(5):
             yield [
-                complex(math.cos(phase_offset + i * 0.1), math.sin(phase_offset + i * 0.1))
+                complex(
+                    magnitude * math.cos(phase_offset + i * 0.1 + random.gauss(0, noise_scale)),
+                    magnitude * math.sin(phase_offset + i * 0.1 + random.gauss(0, noise_scale))
+                )
                 for i in range(subcarriers)
             ]
 

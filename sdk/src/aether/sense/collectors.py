@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean, variance
@@ -123,6 +124,13 @@ class SignalCollector:
         return (avg_time * speed_of_light) / 2
 
     def _distance_from_csi(self, samples: list[SignalSample]) -> float:
+        # CSI distance estimation using magnitude (inverse relationship)
+        # More sophisticated methods would use phase differences between subcarriers
         avg_mag = mean(sample.value for sample in samples)
-        return 1.0 / max(avg_mag, 1e-6)
+        # Inverse relationship: closer devices have stronger signals
+        # Calibrated for typical Wi-Fi signal strength
+        if avg_mag < 1e-6:
+            return 10.0  # Default for very weak signals
+        # Use inverse square law approximation: distance ∝ 1/sqrt(magnitude)
+        return 1.0 / math.sqrt(max(avg_mag, 1e-6))
 
